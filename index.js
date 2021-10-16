@@ -139,7 +139,7 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
      * @return This function will return the result that would have 
      *         otherwise been passed to the Promise resolve
      */
-    executePromiseMethodURL(url, contentParam, requestType, accept) {
+    #executePromiseMethodURL(url, contentParam, requestType, accept) {
         var request = getXmlHttpObject();
         return new Promise((resolve, reject) => {
             requestType = validateRequestType(requestType);
@@ -149,7 +149,11 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
             request.onreadystatechange = function () {
                 if (request.readyState == 4) {
                     let JSONResult = parseHTTPResponse(request);
-                    resolve(JSONResult, request.status, this.owner);
+                    let returnObject = JSONResult;
+                    if (JSONResult != null && JSONResult.result != null && Array.isArray(JSONResult.result)) {
+                        returnObject = JSONResult.result[0];
+                    }
+                    resolve(returnObject, request.status, this.owner);
                     /*
                         if (request.status >= 300) {
                             reject("Error, status code = " + request.status)
@@ -193,7 +197,7 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
     async executePromiseMethod(methodName, requestType, params, requestFilters, accept) {
         var url = this.getMethodURL(methodName, requestType, params, requestFilters);
         try {
-            return await this.executePromiseMethodURL(url[0], url[1], requestType, accept);
+            return await this.#executePromiseMethodURL(url[0], url[1], requestType, accept);
         }
         catch (err) {
             return err
@@ -215,4 +219,4 @@ setConnection("localhost", "9000", "")
 //console.log("EchoString : ", oldExecutor.executeMethod("EchoString", "GET", ["A B C"]))
 
 var executor = new DSFunctionExecutor("TServerMethods1", connectionInfo);
-executor.executePromiseMethod("EchoString", "GET", ["A B C"]).then(value=>console.log("fetch : ", value))
+executor.executePromiseMethod("EchoString", "GET", ["A B C"]).then(value=>console.log("XRH Promise : ", value))

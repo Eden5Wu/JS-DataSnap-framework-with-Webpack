@@ -149,11 +149,11 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
             request.onreadystatechange = function () {
                 if (request.readyState == 4) {
                     let JSONResult = parseHTTPResponse(request);
-                    let returnObject = JSONResult;
                     if (JSONResult != null && JSONResult.result != null && Array.isArray(JSONResult.result)) {
-                        returnObject = JSONResult.result[0];
+                        resolve(JSONResult.result[0], request.status, this.owner);
                     }
-                    resolve(returnObject, request.status, this.owner);
+                    else
+                        reject("Error, status code = " + request.status + "Message : " + JSONResult);
                     /*
                         if (request.status >= 300) {
                             reject("Error, status code = " + request.status)

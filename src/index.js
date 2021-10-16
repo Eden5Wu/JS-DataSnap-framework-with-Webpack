@@ -127,6 +127,82 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
             }
         }
     }
+
+
+    /**
+     * This function executes the given method with the specified parameters and then
+     * notifies the callback when a response is received.
+     * @param url the url to invoke
+     * @param contentParam the parameter to pass through the content of the request (or null)
+     * @param requestType must be one of: GET, POST, PUT, DELETE
+     * @param accept The string value to set for the Accept header of the HTTP request, or null to set as application/json
+     * @return This function will return the result that would have 
+     *         otherwise been passed to the Promise resolve
+     */
+    #executePromiseMethodURL(url, contentParam, requestType, accept) {
+        var request = getXmlHttpObject();
+        return new Promise((resolve, reject) => {
+            requestType = validateRequestType(requestType);
+
+            request.open(requestType, url, true);
+
+            request.onreadystatechange = function () {
+                if (request.readyState == 4) {
+                    let JSONResult = parseHTTPResponse(request);
+                    if (JSONResult != null && JSONResult.result != null && Array.isArray(JSONResult.result)) {
+                        resolve(JSONResult.result[0], request.status, this.owner);
+                    }
+                    else
+                        reject("Error, status code = " + request.status + "Message : " + JSONResult);
+                    /*
+                        if (request.status >= 300) {
+                            reject("Error, status code = " + request.status)
+                        } else {
+                            resolve(request.responseText);
+                        }
+                    */
+                }
+            };
+
+            if (contentParam != null) {
+                contentParam = JSON.stringify(contentParam);
+            }
+
+            request.setRequestHeader("Accept", (accept == null ? "application/json" : accept));
+            request.setRequestHeader("Content-Type", "text/plain;charset=UTF-8");
+            request.setRequestHeader("If-Modified-Since", "Mon, 1 Oct 1990 05:00:00 GMT");
+
+            var sessId = getSessionID();
+            if (sessId != null) {
+                request.setRequestHeader("Pragma", "dssession=" + sessId);
+            }
+            if (this.authentication != null) {
+                request.setRequestHeader("Authorization", "Basic " + this.authentication);
+            }
+            request.send(contentParam);
+        })
+    };
+
+    /**
+     * This function executes the given method with the specified parameters and then
+     * notifies the callback when a response is received.
+     * @param methodName the name of the method in the class to invoke
+     * @param requestType must be one of: GET, POST, PUT, DELETE
+     * @param params an array of parameter values to pass into the method, or a single parameter value
+     * @param requestFilters JSON Object containing pairs of key/value filters to add to the request (filters such as ss.r, for example.)
+     * @param accept The string value to set for the Accept header of the HTTP request, or null to set application/json
+     * @return if callback in null then this function will return the result that would have 
+     *         otherwise been passed to the callback
+     */
+    async executePromiseMethod(methodName, requestType, params, requestFilters, accept) {
+        var url = this.getMethodURL(methodName, requestType, params, requestFilters);
+        try {
+            return await this.#executePromiseMethodURL(url[0], url[1], requestType, accept);
+        }
+        catch (err) {
+            return err
+        }
+    };
 }
 
 
@@ -143,4 +219,4 @@ setConnection("localhost", "9000", "")
 //console.log("EchoString : ", oldExecutor.executeMethod("EchoString", "GET", ["A B C"]))
 
 var executor = new DSFunctionExecutor("TServerMethods1", connectionInfo);
-executor.fetchMethod("EchoString", "GET", ["A B C"]).then(value=>console.log("fetch : ", value))
+executor.executePromiseMethod("EchoString", "GET", ["A B C"]).then(value=>console.log("XRH Promise : ", value))

@@ -13,18 +13,13 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
      * @param url the url to invoke
      * @param contentParam the parameter to pass through the content of the request (or null)
      * @param requestType must be one of: GET, POST, PUT, DELETE
-     * @param hasResult true if a result from the server call is expected, false to ignore any result returned.
-     *                  This is an optional parameter and defaults to 'true'
-     * @param accept The string value to set for the Accept header of the HTTP request, or null to set as application/json
      * @return This function will return the result that would have otherwise been passed to the Promise.
      */
-    async #fetchMethodURL(url, contentParam, requestType, hasResult, accept) {
-        if (hasResult == null) hasResult = true;
-
+    async #fetchMethodURL(url, contentParam, requestType) {
         requestType = validateRequestType(requestType);
 
         const fetchHeaders = new Headers();
-        fetchHeaders.append("Accept", (accept == null ? "application/json" : accept));
+        fetchHeaders.append("Accept", "application/json");
         fetchHeaders.append("Content-Type", "text/plain;charset=UTF-8");
         fetchHeaders.append("If-Modified-Since", "Mon, 1 Oct 1990 05:00:00 GMT");
         const sessId = getSessionID();
@@ -82,9 +77,9 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
      * @param accept The string value to set for the Accept header of the HTTP request, or null to set application/json
      * @return This function will return the result that would have otherwise been passed to the Promise.
      */
-    async fetchMethod(methodName, requestType, params, hasResult, requestFilters, accept) {
+    async fetchMethod(methodName, requestType, params, requestFilters) {
         const url = this.getMethodURL(methodName, requestType, params, requestFilters);
-        return await this.#fetchMethodURL(url[0], url[1], requestType, hasResult, accept);
+        return await this.#fetchMethodURL(url[0], url[1], requestType);
     };
 
     /**
@@ -135,12 +130,11 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
      * @param url the url to invoke
      * @param contentParam the parameter to pass through the content of the request (or null)
      * @param requestType must be one of: GET, POST, PUT, DELETE
-     * @param accept The string value to set for the Accept header of the HTTP request, or null to set as application/json
      * @return This function will return the result that would have 
      *         otherwise been passed to the Promise resolve
      */
-    #executePromiseMethodURL(url, contentParam, requestType, accept) {
-        var request = getXmlHttpObject();
+    #executePromiseMethodURL(url, contentParam, requestType) {
+        const request = getXmlHttpObject();
         return new Promise((resolve, reject) => {
             requestType = validateRequestType(requestType);
 
@@ -168,7 +162,7 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
                 contentParam = JSON.stringify(contentParam);
             }
 
-            request.setRequestHeader("Accept", (accept == null ? "application/json" : accept));
+            request.setRequestHeader("Accept", "application/json");
             request.setRequestHeader("Content-Type", "text/plain;charset=UTF-8");
             request.setRequestHeader("If-Modified-Since", "Mon, 1 Oct 1990 05:00:00 GMT");
 
@@ -194,10 +188,10 @@ class DSFunctionExecutor extends ServerFunctionExecutor {
      * @return if callback in null then this function will return the result that would have 
      *         otherwise been passed to the callback
      */
-    async executePromiseMethod(methodName, requestType, params, requestFilters, accept) {
-        var url = this.getMethodURL(methodName, requestType, params, requestFilters);
+    async executePromiseMethod(methodName, requestType, params, requestFilters) {
+        const url = this.getMethodURL(methodName, requestType, params, requestFilters);
         try {
-            return await this.#executePromiseMethodURL(url[0], url[1], requestType, accept);
+            return await this.#executePromiseMethodURL(url[0], url[1], requestType);
         }
         catch (err) {
             return err
